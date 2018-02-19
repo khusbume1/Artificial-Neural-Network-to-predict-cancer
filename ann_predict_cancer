@@ -1,0 +1,29 @@
+
+library(neuralnet)
+colonData <- read.table("D:/colon.csv", header=TRUE, sep=",")
+set.seed(152)
+ind <- sample(2, nrow(colonData), replace=TRUE, prob=c(0.7, 0.3))
+trainData <- colonData[ind==1,]
+testData <- colonData[ind==2,]
+nnet_cancertrain <- trainData
+
+#binarize the categorical output
+nnet_cancertrain <- cbind(nnet_cancertrain, trainData$Class == '1')
+nnet_cancertrain <- cbind(nnet_cancertrain, trainData$Class == '-1')
+names(nnet_cancertrain)[2002:2003] <- c('normal','cancer')
+
+nn <- neuralnet(normal+cancer ~
+                  nnet_cancertrain[,1] + nnet_cancertrain[,2],
+                data=nnet_cancertrain, hidden=c(3))
+plot(nn)
+
+#predict
+mypredict <- compute(nn, testData[,1:2])$net.result
+mypredict
+
+#put multiple binary output to categorical output
+maxidx <- function(arr){ return(which(arr == max(arr)))}
+idx <- apply(mypredict, c(1), maxidx)
+prediction <- c('normal', 'cancer')[idx]
+table(prediction, testData$Class)
+
